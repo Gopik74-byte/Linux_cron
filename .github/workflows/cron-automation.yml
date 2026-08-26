@@ -1,0 +1,47 @@
+name: Cron Automation CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test-and-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run automation script
+        run: |
+          chmod +x automation.sh
+          ./automation.sh
+
+      - name: Check output
+        run: |
+          if [ ! -s job-output.log ]; then
+            echo "ERROR: Job output is empty"
+            exit 1
+          fi
+
+          echo "Job output:"
+          cat job-output.log
+
+      - name: Generate report
+        if: always()
+        run: |
+          echo "# Automation Report" > report.md
+          echo "" >> report.md
+          echo "**Status:** ${{ job.status }}" >> report.md
+          echo "" >> report.md
+          echo "## Job Output" >> report.md
+          cat job-output.log >> report.md
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-report
+          path: report.md
